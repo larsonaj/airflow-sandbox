@@ -34,6 +34,10 @@ from airflow import models
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.docker.operators.docker import DockerOperator
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.hooks.base import BaseHook
+
+
 
 ENV_ID = os.environ.get("SYSTEM_TESTS_ENV_ID")
 DAG_ID = "docker_sample_copy_data"
@@ -43,13 +47,16 @@ with models.DAG(
     schedule="@once",
     start_date=datetime(2021, 1, 1),
     catchup=False,
-    tags=["example", "docker"],
+    tags=["demo", "sandbox", "Captech"],
 ) as dag:
 
-    locate_file_cmd = """
-        sleep 10
-        find {{params.source_location}} -type f  -printf "%f\n" | head -1
-    """
+    ## generate SQL hook
+    sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
+
+    extract = SQLExecuteQueryOperator(
+        sql = FILE_NAME, 
+
+    )
 
     t_view = BashOperator(
         task_id="view_file",
