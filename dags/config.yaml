@@ -1,0 +1,5 @@
+project_version:
+connections:
+  captech_sql:
+    server_name: trainingsql01
+    db_name: AdventureWorks_01

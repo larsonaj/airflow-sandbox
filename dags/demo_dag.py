@@ -37,6 +37,14 @@ from airflow.providers.docker.operators.docker import DockerOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.hooks.base import BaseHook
 
+import yaml
+
+## General pattern to follow
+    # Query CT on prem SQL server
+        # Stash results in parquet "locally"
+    # Use docker container, with data mounted
+        # Apply set of transformations of data and construct model
+    # Store model artifacts somewhere?
 
 
 ENV_ID = os.environ.get("SYSTEM_TESTS_ENV_ID")
@@ -50,12 +58,32 @@ with models.DAG(
     tags=["demo", "sandbox", "Captech"],
 ) as dag:
 
+
+    sql_query = """
+    select top 10 *
+    from TABLE_NAME
+    """
+
+    with open('config.yaml') as f:
+        config = yaml.safe_load(f)
+
+    with open('db_credentials.yaml') as d:
+        db_creds = yaml.safe_load(d)
+
+    captech_sql_conn = Connection(
+        conn_id = "captech_sql_conn",
+        conn_type = "mssql",
+        description = "",
+        host = "",
+        login = db_creds["captech_sql"]["user_name"],
+        password = db_creds["captech_sql"]["password"]
+    )
+
     ## generate SQL hook
     sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
 
     extract = SQLExecuteQueryOperator(
-        sql = FILE_NAME, 
-
+        sql = sql_query
     )
 
     t_view = BashOperator(
