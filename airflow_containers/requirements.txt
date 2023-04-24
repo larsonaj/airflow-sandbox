@@ -1,0 +1,4 @@
+apache-airflow-providers-docker==2.5.1
+apache-airflow-providers-snowflake==4.0.4
+snowflake-connector-python==2.9.0
+snowflake-sqlalchemy==1.4.7

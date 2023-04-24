@@ -35,6 +35,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.docker.operators.docker import DockerOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.hooks.base import BaseHook
 
 import yaml
@@ -61,81 +62,78 @@ with models.DAG(
 
     sql_query = """
     select top 10 *
-    from TABLE_NAME
+    from CUSTOMERS
     """
 
-    with open('config.yaml') as f:
+    with open('/opt/airflow/dags/config.yaml') as f:
         config = yaml.safe_load(f)
 
-    with open('db_credentials.yaml') as d:
-        db_creds = yaml.safe_load(d)
+    # with open('db_credentials.yaml') as d:
+    #     db_creds = yaml.safe_load(d)
 
-    captech_sql_conn = Connection(
-        conn_id = "captech_sql_conn",
-        conn_type = "mssql",
-        description = "",
-        host = "",
-        login = db_creds["captech_sql"]["user_name"],
-        password = db_creds["captech_sql"]["password"]
+    captech_sql_conn = SnowflakeOperator(
+        task_id='query_snowflake',
+        snowflake_conn_id='CAPTECH_SNOWFLAKE',
+        sql=sql_query
     )
 
-    ## generate SQL hook
-    sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
+    # ## generate SQL hook
+    # sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
 
-    extract = SQLExecuteQueryOperator(
-        sql = sql_query
-    )
+    # extract = SQLExecuteQueryOperator(
+    #     sql = sql_query
+    # )
 
-    t_view = BashOperator(
-        task_id="view_file",
-        bash_command=locate_file_cmd,
-        do_xcom_push=True,
-        params={"source_location": "/your/input_dir/path"},
-        dag=dag,
-    )
+    # t_view = BashOperator(
+    #     task_id="view_file",
+    #     bash_command=locate_file_cmd,
+    #     do_xcom_push=True,
+    #     params={"source_location": "/your/input_dir/path"},
+    #     dag=dag,
+    # )
 
-    t_is_data_available = ShortCircuitOperator(
-        task_id="check_if_data_available",
-        python_callable=lambda task_output: not task_output == "",
-        op_kwargs=dict(task_output=t_view.output),
-        dag=dag,
-    )
+    # t_is_data_available = ShortCircuitOperator(
+    #     task_id="check_if_data_available",
+    #     python_callable=lambda task_output: not task_output == "",
+    #     op_kwargs=dict(task_output=t_view.output),
+    #     dag=dag,
+    # )
 
-    t_move = DockerOperator(
-        api_version="auto",
-        docker_url="unix://var/run/docker.sock",  # replace it with swarm/docker endpoint
-        image="captech/python-processing-container:latest",
-        network_mode="bridge",
-        mounts=[
-            Mount(source="/your/host/input_dir/path", target="/your/input_dir/path", type="bind"),
-            Mount(source="/your/host/output_dir/path", target="/your/output_dir/path", type="bind"),
-        ],
-        command=[
-            "/bin/bash",
-            "-c",
-            "/bin/sleep 30; "
-            "/bin/mv {{ params.source_location }}/" + str(t_view.output) + " {{ params.target_location }};"
-            "/bin/echo '{{ params.target_location }}/" + f"{t_view.output}';",
-        ],
-        task_id="move_data",
-        do_xcom_push=True,
-        params={"source_location": "/your/input_dir/path", "target_location": "/your/output_dir/path"},
-        dag=dag,
-    )
+    # t_move = DockerOperator(
+    #     api_version="auto",
+    #     docker_url="unix://var/run/docker.sock",  # replace it with swarm/docker endpoint
+    #     image="captech/python-processing-container:latest",
+    #     network_mode="bridge",
+    #     mounts=[
+    #         Mount(source="/your/host/input_dir/path", target="/your/input_dir/path", type="bind"),
+    #         Mount(source="/your/host/output_dir/path", target="/your/output_dir/path", type="bind"),
+    #     ],
+    #     command=[
+    #         "/bin/bash",
+    #         "-c",
+    #         "/bin/sleep 30; "
+    #         "/bin/mv {{ params.source_location }}/" + str(t_view.output) + " {{ params.target_location }};"
+    #         "/bin/echo '{{ params.target_location }}/" + f"{t_view.output}';",
+    #     ],
+    #     task_id="move_data",
+    #     do_xcom_push=True,
+    #     params={"source_location": "/your/input_dir/path", "target_location": "/your/output_dir/path"},
+    #     dag=dag,
+    # )
 
-    t_print = DockerOperator(
-        api_version="auto",
-        docker_url="unix://var/run/docker.sock",
-        image="captech/python-processing-container:latest",
-        mounts=[Mount(source="/your/host/output_dir/path", target="/your/output_dir/path", type="bind")],
-        command=f"cat {t_move.output}",
-        task_id="print",
-        dag=dag,
-    )
+    # t_print = DockerOperator(
+    #     api_version="auto",
+    #     docker_url="unix://var/run/docker.sock",
+    #     image="captech/python-processing-container:latest",
+    #     mounts=[Mount(source="/your/host/output_dir/path", target="/your/output_dir/path", type="bind")],
+    #     command=f"cat {t_move.output}",
+    #     task_id="print",
+    #     dag=dag,
+    # )
 
-    (
-        # TEST BODY
-        t_is_data_available
-        >> t_move
-        >> t_print
-    )
+    # (
+    #     # TEST BODY
+    #     t_is_data_available
+    #     >> t_move
+    #     >> t_print
+    # )
