@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 logs/*
+
+# DB Creds
+db_credentials.yaml
