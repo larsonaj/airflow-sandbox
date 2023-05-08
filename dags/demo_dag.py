@@ -37,6 +37,7 @@ from airflow.providers.docker.operators.docker import DockerOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.hooks.base import BaseHook
+from packages.snowflake_to_local import SnowflakeToLocalOperator
 
 import yaml
 
@@ -61,8 +62,16 @@ with models.DAG(
 
 
     sql_query = """
-    select top 10 *
-    from CUSTOMERS
+    select top 10 ORDER_ID, 
+    CUSTOMER_ID, 
+    cast(ORDER_DATE as varchar),
+    STATUS,
+    CREDIT_CARD_AMOUNT,
+    COUPON_AMOUNT,
+    BANK_TRANSFER_AMOUNT,
+    GIFT_CARD_AMOUNT,
+    AMOUNT
+    from ORDERS
     """
 
     with open('/opt/airflow/dags/config.yaml') as f:
@@ -71,10 +80,11 @@ with models.DAG(
     # with open('db_credentials.yaml') as d:
     #     db_creds = yaml.safe_load(d)
 
-    captech_sql_conn = SnowflakeOperator(
+    captech_sql_conn = SnowflakeToLocalOperator(
         task_id='query_snowflake',
-        snowflake_conn_id='CAPTECH_SNOWFLAKE',
-        sql=sql_query
+        conn_id='CAPTECH_SNOWFLAKE',
+        output_path="/opt/airflow/data_files",
+        sql_query=sql_query,
     )
 
     # ## generate SQL hook
