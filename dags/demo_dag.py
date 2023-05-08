@@ -77,6 +77,29 @@ with models.DAG(
         sql=sql_query
     )
 
+    t_view = BashOperator(
+        task_id="view_file",
+        bash_command="pwd",
+        dag=dag
+    )
+
+    ls_view = BashOperator(
+        task_id="ls",
+        bash_command="ls /opt/",
+        dag=dag
+    )
+
+
+    t_print = DockerOperator(
+        task_id="print",
+        api_version="auto",
+        image="captech-airflow-sandbox-python:0.0.1",
+        mount_tmp_dir=False,
+        mounts=[Mount(source="/opt/airflow", target="/opt/airflow", type="volume")],
+        command=f"ls opt/airflow/",
+        dag=dag
+    )
+
     # ## generate SQL hook
     # sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
 
