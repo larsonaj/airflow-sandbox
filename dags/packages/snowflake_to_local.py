@@ -12,6 +12,8 @@ class SnowflakeToLocalOperator(BaseOperator):
         output_path,
         conn_id,
         sql_query,
+        folder_name,
+        file_name,
         mode="overwrite",
         format="csv",
         **kwargs
@@ -20,6 +22,8 @@ class SnowflakeToLocalOperator(BaseOperator):
         self.mode = mode
         self.format = format
         self.output_path = output_path
+        self.folder_name = folder_name
+        self.file_name = file_name
         self.conn_id = conn_id
         self.sql_query = sql_query
 
@@ -34,7 +38,15 @@ class SnowflakeToLocalOperator(BaseOperator):
 
         data = pd.DataFrame(query)
 
-        data.to_csv(f"{self.output_path}/file.csv")
+        if self.format == "csv":
+
+            data.to_csv(f"{self.output_path}/{self.folder_name}/{self.file_name}/file.csv")
+
+        if self.format == "parquet":
+
+            data.to_parquet(f"{self.output_path}/{self.folder_name}/{self.file_name}.parquet")
+
+
 
         # if self.mode == "overwrite":
 
