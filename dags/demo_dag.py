@@ -85,6 +85,9 @@ with models.DAG(
         conn_id='CAPTECH_SNOWFLAKE',
         output_path="/opt/airflow/data_files",
         sql_query=sql_query,
+        folder_name='snowflake',
+        run_id="{{ ds }}",
+        file_name='test'
     )
 
     # ## generate SQL hook

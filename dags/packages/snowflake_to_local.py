@@ -2,10 +2,13 @@ from airflow.models.baseoperator import BaseOperator
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
 from airflow.providers.common.sql.hooks.sql import fetch_all_handler
 import pandas as pd
+import os
 
 
 
 class SnowflakeToLocalOperator(BaseOperator):
+
+    template_fields: Sequence[str] = ("run_id")
     
     def __init__(
         self,
@@ -14,6 +17,7 @@ class SnowflakeToLocalOperator(BaseOperator):
         sql_query,
         folder_name,
         file_name,
+        run_id,
         mode="overwrite",
         format="csv",
         **kwargs
@@ -25,6 +29,7 @@ class SnowflakeToLocalOperator(BaseOperator):
         self.folder_name = folder_name
         self.file_name = file_name
         self.conn_id = conn_id
+        self.run_id = run_id
         self.sql_query = sql_query
 
 
@@ -38,23 +43,15 @@ class SnowflakeToLocalOperator(BaseOperator):
 
         data = pd.DataFrame(query)
 
+        os.makedirs(f"{self.output_path}/{self.folder_name}/", exist_ok=True)
+
         if self.format == "csv":
 
-            data.to_csv(f"{self.output_path}/{self.folder_name}/{self.file_name}/file.csv")
+            data.to_csv(f"{self.output_path}/{self.folder_name}/{self.file_name}.csv")
 
         if self.format == "parquet":
 
             data.to_parquet(f"{self.output_path}/{self.folder_name}/{self.file_name}.parquet")
-
-
-
-        # if self.mode == "overwrite":
-
-        # if self.mode == "append":
-
-        # if self.format == "csv":
-
-        # if self.format == "parquet":
 
 
 
