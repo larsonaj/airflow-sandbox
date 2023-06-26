@@ -71,23 +71,11 @@ with models.DAG(
     # with open('db_credentials.yaml') as d:
     #     db_creds = yaml.safe_load(d)
 
-<<<<<<< Updated upstream
     captech_sql_conn = SnowflakeOperator(
         task_id='query_snowflake',
         snowflake_conn_id='CAPTECH_SNOWFLAKE',
         sql=sql_query
     )
-=======
-    # captech_sql_conn = SnowflakeToLocalOperator(
-    #     task_id='query_snowflake',
-    #     conn_id='CAPTECH_SNOWFLAKE',
-    #     output_path="/opt/airflow/data_files",
-    #     sql_query=sql_query,
-    #     folder_name='snowflake',
-    #     run_id="{{ ds }}",
-    #     file_name='test'
-    # )
->>>>>>> Stashed changes
 
     t_view = BashOperator(
         task_id="view_file",
@@ -99,20 +87,6 @@ with models.DAG(
         task_id="ls",
         bash_command="ls /opt/",
         dag=dag
-<<<<<<< Updated upstream
-    )
-
-
-    t_print = DockerOperator(
-        task_id="print",
-        api_version="auto",
-        image="captech-airflow-sandbox-python:0.0.1",
-        mount_tmp_dir=False,
-        mounts=[Mount(source="/opt/airflow", target="/opt/airflow", type="volume")],
-        command=f"ls opt/airflow/",
-        dag=dag
-=======
->>>>>>> Stashed changes
     )
 
     t_print = DockerOperator(
