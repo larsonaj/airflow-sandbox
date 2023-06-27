@@ -1,3 +1,3 @@
 import pandas as pd
 
-print(pd.df([0,1], [1,0]))
+print(pd.DataFrame([0,1], [1,0]))

@@ -71,11 +71,11 @@ with models.DAG(
     # with open('db_credentials.yaml') as d:
     #     db_creds = yaml.safe_load(d)
 
-    captech_sql_conn = SnowflakeOperator(
-        task_id='query_snowflake',
-        snowflake_conn_id='CAPTECH_SNOWFLAKE',
-        sql=sql_query
-    )
+    # captech_sql_conn = SnowflakeOperator(
+    #     task_id='query_snowflake',
+    #     snowflake_conn_id='CAPTECH_SNOWFLAKE',
+    #     sql=sql_query
+    # )
 
     t_view = BashOperator(
         task_id="view_file",
@@ -85,7 +85,7 @@ with models.DAG(
 
     ls_view = BashOperator(
         task_id="ls",
-        bash_command="ls /opt/",
+        bash_command="ls /opt/airflow/dags",
         dag=dag
     )
 
@@ -94,8 +94,10 @@ with models.DAG(
         api_version="auto",
         image="captech-airflow-sandbox-python:0.0.1",
         mount_tmp_dir=False,
-        mounts=[Mount(source="/opt/airflow", target="/opt/airflow", type="volume")],
-        command=f"ls opt/airflow/",
+        mounts=[
+            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+        ],
+        command=f"python3 opt/airflow/dags/scripts/transform.py",
         dag=dag
     )
     # ## generate SQL hook
