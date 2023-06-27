@@ -87,6 +87,23 @@ with models.DAG(
         sql_query=sql_query,
     )
 
+    ls_view = BashOperator(
+        task_id="ls",
+        bash_command="ls /opt/airflow/dags",
+        dag=dag
+    )
+
+    t_print = DockerOperator(
+        task_id="print",
+        api_version="auto",
+        image="captech-airflow-sandbox-python:0.0.1",
+        mount_tmp_dir=False,
+        mounts=[
+            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+        ],
+        command=f"python3 opt/airflow/dags/scripts/transform.py",
+        dag=dag
+    )
     # ## generate SQL hook
     # sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
 
@@ -141,9 +158,7 @@ with models.DAG(
     #     dag=dag,
     # )
 
-    # (
-    #     # TEST BODY
-    #     t_is_data_available
-    #     >> t_move
-    #     >> t_print
-    # )
+    # TEST BODY
+    captech_sql_conn
+    ls_view
+    t_print
