@@ -15,8 +15,8 @@
 1. Install WSL from the Microsoft Store
 2. Install a distrobution from the MS Store (Ubuntu recommended)
 3. Open Powershell with administrator elevation
-    i. On CT machines, open the start menu and search powershell
-    ii. Right click, and select open file location
+    i. On CT machines, open the start menu and search powershell \n
+    ii. Right click, and select open file location \n
     iii. Right click on powershell.exe and select "More Options"
     iv. Select "Beyond Trust" and provide a reason (ex: Install WSL)
     v. You will now need to open a SECOND command prompt window using the following command to get "true" admin permissions

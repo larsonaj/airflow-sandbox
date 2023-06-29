@@ -134,7 +134,8 @@ logs/*
 db_credentials.yaml
 
 
-# Log files
 
-logs/
+# Log and data files
 data_files/
+logs/
+
