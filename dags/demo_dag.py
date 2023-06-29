@@ -77,17 +77,13 @@ with models.DAG(
     with open('/opt/airflow/dags/config.yaml') as f:
         config = yaml.safe_load(f)
 
-    # with open('db_credentials.yaml') as d:
-    #     db_creds = yaml.safe_load(d)
-
     captech_sql_conn = SnowflakeToLocalOperator(
         task_id='query_snowflake',
         conn_id='CAPTECH_SNOWFLAKE',
         output_path="/opt/airflow/data_files",
         sql_query=sql_query,
-        folder_name='snowflake',
-        run_id="{{ ds }}",
-        file_name='test'
+        folder_name="{{ ti.task_id }}",
+        file_name="{{ ds }}"
     )
 
     # ## generate SQL hook

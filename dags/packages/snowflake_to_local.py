@@ -8,7 +8,7 @@ import os
 
 class SnowflakeToLocalOperator(BaseOperator):
 
-    template_fields: Sequence[str] = ("run_id")
+    template_fields = ("file_name", "folder_name")
     
     def __init__(
         self,
@@ -17,7 +17,6 @@ class SnowflakeToLocalOperator(BaseOperator):
         sql_query,
         folder_name,
         file_name,
-        run_id,
         mode="overwrite",
         format="csv",
         **kwargs
@@ -29,7 +28,6 @@ class SnowflakeToLocalOperator(BaseOperator):
         self.folder_name = folder_name
         self.file_name = file_name
         self.conn_id = conn_id
-        self.run_id = run_id
         self.sql_query = sql_query
 
 
