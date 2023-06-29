@@ -128,11 +128,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+logs/*
 
 # DB Creds
 db_credentials.yaml
 
 
+
 # Log and data files
 data_files/
 logs/
+
