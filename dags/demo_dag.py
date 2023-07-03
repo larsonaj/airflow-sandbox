@@ -64,7 +64,7 @@ with models.DAG(
     sql_query = """
     select top 10 ORDER_ID, 
     CUSTOMER_ID, 
-    cast(ORDER_DATE as varchar),
+    cast(ORDER_DATE as varchar) as poop,
     STATUS,
     CREDIT_CARD_AMOUNT,
     COUPON_AMOUNT,
