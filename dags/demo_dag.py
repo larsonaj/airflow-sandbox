@@ -70,7 +70,8 @@ with models.DAG(
         cr."constructorId",
         cr."nationality",
         r."year",
-        c."circuitId"
+        c."circuitId",
+        s."fastestLapTime"
     from F1.QUALIFYING as q
     left join F1.DRIVERS as dr
         on (q."driverId" = dr."driverId")
@@ -80,6 +81,8 @@ with models.DAG(
         on (q."raceId" = r."raceId")
     left join F1.CIRCUITS c
         on (r."circuitId"= c."circuitId")
+    left join F1.RESULTS s
+        on (q."raceId" = s."raceId")
     """
 
     with open('/opt/airflow/dags/config.yaml') as f:
@@ -102,7 +105,25 @@ with models.DAG(
         mounts=[
             Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
         ],
+        environment={
+                    "task_id": "{{ ti.task_id }}"
+        },
         command="python3 opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        dag=dag
+    )
+
+    training = DockerOperator(
+        task_id="training",
+        api_version="auto",
+        image="captech-airflow-sandbox-python:0.0.1",
+        mount_tmp_dir=False,
+        mounts=[
+            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+        ],
+        environment={
+                    "task_id": "{{ ti.task_id }}"
+        },
+        command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag
     )
     # ## generate SQL hook
@@ -160,4 +181,4 @@ with models.DAG(
     # )
 
     # TEST BODY
-    captech_sql_conn >> feature_engineering
+    captech_sql_conn >> feature_engineering >> training
