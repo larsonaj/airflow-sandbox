@@ -71,7 +71,7 @@ with models.DAG(
         cr."nationality",
         r."year",
         c."circuitId",
-        s."fastestLapTime"
+        lt.minLapTime
     from F1.QUALIFYING as q
     left join F1.DRIVERS as dr
         on (q."driverId" = dr."driverId")
@@ -81,8 +81,16 @@ with models.DAG(
         on (q."raceId" = r."raceId")
     left join F1.CIRCUITS c
         on (r."circuitId"= c."circuitId")
-    left join F1.RESULTS s
-        on (q."raceId" = s."raceId")
+    left join (
+    select "driverId",
+            "raceId",
+            min("milliseconds")/1000 as minLapTime
+        from F1.LAP_TIMES
+        group by "driverId",
+            "raceId"
+    ) lt
+    on (q."driverId" = lt."driverId"
+        and q."raceId" = lt."raceId")
     """
 
     with open('/opt/airflow/dags/config.yaml') as f:
