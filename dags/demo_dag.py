@@ -62,16 +62,35 @@ with models.DAG(
 
 
     sql_query = """
-    select top 10 ORDER_ID, 
-    CUSTOMER_ID, 
-    cast(ORDER_DATE as varchar) as poop,
-    STATUS,
-    CREDIT_CARD_AMOUNT,
-    COUPON_AMOUNT,
-    BANK_TRANSFER_AMOUNT,
-    GIFT_CARD_AMOUNT,
-    AMOUNT
-    from ORDERS
+    select q."q1",
+        q."q2",
+        q."q3",
+        dr."driverId",
+        r."year" - year(dr."dob") as age,
+        cr."constructorId",
+        cr."nationality",
+        r."year",
+        c."circuitId",
+        lt.minLapTime
+    from F1.QUALIFYING as q
+    left join F1.DRIVERS as dr
+        on (q."driverId" = dr."driverId")
+    left join F1.CONSTRUCTORS as cr
+        on (q."constructorId" = cr."constructorId")
+    left join F1.RACES r
+        on (q."raceId" = r."raceId")
+    left join F1.CIRCUITS c
+        on (r."circuitId"= c."circuitId")
+    left join (
+    select "driverId",
+            "raceId",
+            min("milliseconds")/1000 as minLapTime
+        from F1.LAP_TIMES
+        group by "driverId",
+            "raceId"
+    ) lt
+    on (q."driverId" = lt."driverId"
+        and q."raceId" = lt."raceId")
     """
 
     with open('/opt/airflow/dags/config.yaml') as f:
@@ -83,24 +102,51 @@ with models.DAG(
         output_path="/opt/airflow/data_files",
         sql_query=sql_query,
         folder_name="{{ ti.task_id }}",
-        file_name="{{ ds }}"
+        file_name="{{ data_interval_end }}"
     )
 
-    ls_view = BashOperator(
-        task_id="ls",
-        bash_command="ls /opt/airflow/dags",
-        dag=dag
-    )
-
-    t_print = DockerOperator(
-        task_id="print",
+    feature_engineering = DockerOperator(
+        task_id="feature_engineering",
         api_version="auto",
         image="captech-airflow-sandbox-python:0.0.1",
         mount_tmp_dir=False,
         mounts=[
             Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
         ],
-        command=f"python3 opt/airflow/dags/scripts/transform.py",
+        environment={
+                    "task_id": "{{ ti.task_id }}"
+        },
+        command="python3 opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        dag=dag
+    )
+
+    lasso_training = DockerOperator(
+        task_id="lasso_training",
+        api_version="auto",
+        image="captech-airflow-sandbox-python:0.0.1",
+        mount_tmp_dir=False,
+        mounts=[
+            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+        ],
+        environment={
+                    "task_id": "{{ ti.task_id }}"
+        },
+        command="python3 opt/airflow/dags/scripts/lasso_training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        dag=dag
+    )
+
+    training = DockerOperator(
+        task_id="training",
+        api_version="auto",
+        image="captech-airflow-sandbox-python:0.0.1",
+        mount_tmp_dir=False,
+        mounts=[
+            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+        ],
+        environment={
+                    "task_id": "{{ ti.task_id }}"
+        },
+        command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag
     )
     # ## generate SQL hook
@@ -158,6 +204,6 @@ with models.DAG(
     # )
 
     # TEST BODY
-    captech_sql_conn
-    ls_view
-    t_print
+    captech_sql_conn >> feature_engineering
+    feature_engineering >> lasso_training
+    feature_engineering >> training
