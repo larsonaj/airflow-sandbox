@@ -149,6 +149,16 @@ with models.DAG(
         command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag
     )
+    upload_training = LocalToSnowflakeOperator(
+        task_id='upload_to_snowflake',
+        conn_id='CAPTECH_SNOWFLAKE',
+        output_path="/opt/airflow/data_files",
+        folder_name="training",
+        file_name="{{ data_interval_end }}",
+        table_name="model_accuracy_scores",
+        database="test_db",
+        schema="f1"
+    )
     # ## generate SQL hook
     # sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
 
@@ -207,3 +217,4 @@ with models.DAG(
     captech_sql_conn >> feature_engineering
     feature_engineering >> lasso_training
     feature_engineering >> training
+    training >> upload_training

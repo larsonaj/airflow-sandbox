@@ -26,7 +26,7 @@ kf = KFold(n_splits=3)
 reg = make_pipeline(StandardScaler(), SGDRegressor(max_iter=1000, tol=1e-3))
 
 acc_score = []
-for train_index , test_index in kf.split(X):
+for i, (train_index , test_index) in enumerate(kf.split(X)):
     X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
     y_train , y_test = y[train_index] , y[test_index]
     
@@ -37,6 +37,7 @@ for train_index , test_index in kf.split(X):
     r2 = r2_score(y_test, pred_values)
     results_df = list(zip(y_test, pred_values))
     print(results_df)
-    acc_score.append((acc, r2))
+    acc_score.append((i, acc, r2))
     # print(list(zip(reg.coef_, reg.feature_names_in_)))
-print(acc_score)
+
+df = pd.DataFrame(results_df, columns=['r_squared', 'accuracy_score'])
