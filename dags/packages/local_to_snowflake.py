@@ -47,7 +47,7 @@ class LocalToSnowflakeOperator(BaseOperator):
         file_path = f"{self.input_path}/{self.folder_name}/{self.file_name}.csv"
         upload_df = pd.read_csv(file_path)
 
-        cursor = conn.cursor()
+        cursor = connection.cursor()
 
         cursor.execute
         (
