@@ -4,7 +4,7 @@ from snowflake.connector.pandas_tools import write_pandas
 import pandas as pd
 import os
 import csv
-import datetime.datetime as dt
+from datetime import datetime as dt
 
 
 
@@ -25,16 +25,16 @@ class LocalToSnowflake(BaseOperator):
     ) -> None:
         super().__init__(**kwargs)
         self.mode = mode
+        self.destination_schema=destination_schema
+        self.destination_table=destination_table
         self.format = format
-        self.output_path = output_path
         self.folder_name = folder_name
         self.file_name = file_name
         self.conn_id = conn_id
-        self.sql_query = sql_query
 
 
 
-    def execute():
+    def execute(self, context):
         # read file into memory
 
         if format == "parquet":
@@ -54,7 +54,7 @@ class LocalToSnowflake(BaseOperator):
         # generate insert statement
 
         if mode == "insert":
-            success, nchunks, nrows, _ = write_pandas(conn=connection, df = df, table_name=destination_table, schema=destination_schema, database="TEST_DB", quote_identifiers=False)
+            success, nchunks, nrows, _ = write_pandas(conn=connection, df=df, table_name=destination_table, schema=destination_schema, database="TEST_DB", quote_identifiers=False)
             print(f"Status: {success}, Chunks: {nchunks}, Rows: {nrows}, Other Stuff: {_}")
         elif mode == "upsert":
             kwargs['primary_key']
