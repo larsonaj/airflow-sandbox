@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import KFold
 import argparse
+import os
 
 parser = argparse.ArgumentParser(
                     prog='data_intake',
@@ -40,4 +41,11 @@ for i, (train_index , test_index) in enumerate(kf.split(X)):
     acc_score.append((i, acc, r2))
     # print(list(zip(reg.coef_, reg.feature_names_in_)))
 
-df = pd.DataFrame(results_df, columns=['r_squared', 'accuracy_score'])
+df = pd.DataFrame(acc_score, columns=['FOLD_NUM', 'R_SQUARED', 'ACCURACY_SCORE'])
+
+task_id = os.environ['task_id']
+output_path = f"/opt/airflow/data_files/{task_id}"
+os.makedirs(output_path, exist_ok=True)
+
+file_path = f"{output_path}/{args.filename}"
+df.to_csv(file_path, index=False)

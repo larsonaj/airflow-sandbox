@@ -38,6 +38,7 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.hooks.base import BaseHook
 from packages.snowflake_to_local import SnowflakeToLocalOperator
+from packages.local_to_snowflake import LocalToSnowflakeOperator
 
 import yaml
 
@@ -152,7 +153,7 @@ with models.DAG(
     upload_training = LocalToSnowflakeOperator(
         task_id='upload_to_snowflake',
         conn_id='CAPTECH_SNOWFLAKE',
-        output_path="/opt/airflow/data_files",
+        input_path="/opt/airflow/data_files",
         folder_name="training",
         file_name="{{ data_interval_end }}",
         table_name="model_accuracy_scores",

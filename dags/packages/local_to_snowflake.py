@@ -48,24 +48,21 @@ class LocalToSnowflakeOperator(BaseOperator):
         upload_df = pd.read_csv(file_path)
 
         cursor = connection.cursor()
-
-        cursor.execute
-        (
-        """
+        create_table_sql = """
         CREATE TABLE IF NOT EXISTS f1.model_accuracy_scores (
             fold_num NUMBER,
             r_squared FLOAT,
             accuracy_score FLOAT
             );
         """
-        )
+        cursor.execute(create_table_sql)
 
         # write df to snowflake
         write_pandas(  
                 conn=connection,  
                 df=upload_df,  
-                table_name=self.table_name,  
-                database=self.database,  
-                schema=self.schema 
+                table_name=self.table_name.upper(),  
+                database=self.database.upper(),  
+                schema=self.schema.upper() 
         )
 
