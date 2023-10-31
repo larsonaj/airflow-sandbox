@@ -48,7 +48,7 @@ import yaml
 ENV_ID = os.environ.get("SYSTEM_TESTS_ENV_ID")
 DAG_ID = "docker_sample_copy_data"
 # GET USER FROM SOMEWHERE ELSE
-user = "jwang"
+user = "alarson"
 # OPERATOR MOUNT PATHING NEEDS WORK
 
 
@@ -61,39 +61,6 @@ with models.DAG(
     tags=["demo", "sandbox", "Captech"],
 ) as dag:
 
-# MAKE THIS A SQL FILE AND STORE IT ELSEWHERE
-    sql_query = """
-    select q."q1",
-        q."q2",
-        q."q3",
-        dr."driverId",
-        r."year" - year(dr."dob") as age,
-        cr."constructorId",
-        cr."nationality",
-        r."year",
-        c."circuitId",
-        lt.minLapTime
-    from F1.QUALIFYING as q
-    left join F1.DRIVERS as dr
-        on (q."driverId" = dr."driverId")
-    left join F1.CONSTRUCTORS as cr
-        on (q."constructorId" = cr."constructorId")
-    left join F1.RACES r
-        on (q."raceId" = r."raceId")
-    left join F1.CIRCUITS c
-        on (r."circuitId"= c."circuitId")
-    left join (
-    select "driverId",
-            "raceId",
-            min("milliseconds")/1000 as minLapTime
-        from F1.LAP_TIMES
-        group by "driverId",
-            "raceId"
-    ) lt
-    on (q."driverId" = lt."driverId"
-        and q."raceId" = lt."raceId")
-    """
-
     with open('/opt/airflow/dags/config.yaml') as f:
         config = yaml.safe_load(f)
 
@@ -101,7 +68,7 @@ with models.DAG(
         task_id='query_snowflake',
         conn_id='CAPTECH_SNOWFLAKE',
         output_path="/opt/airflow/data_files",
-        sql_query=sql_query,
+        sql_query="/opt/airflow/dags/sql/qualifying_times.sql",
         folder_name="{{ ti.task_id }}",
         file_name="{{ data_interval_end }}"
     )
@@ -117,7 +84,7 @@ with models.DAG(
         environment={
                     "task_id": "{{ ti.task_id }}"
         },
-        command="python3 opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        command="python3 /opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag
     )
 
@@ -132,7 +99,7 @@ with models.DAG(
         environment={
                     "task_id": "{{ ti.task_id }}"
         },
-        command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        command="python3 /opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag,
         xcom_all=True
     )

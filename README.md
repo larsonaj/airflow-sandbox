@@ -1,7 +1,5 @@
 # airflow-sandbox
 
-
-
 ## Getting the airflow containers started on your machine
 
 
