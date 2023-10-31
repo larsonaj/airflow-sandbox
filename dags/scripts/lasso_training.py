@@ -4,6 +4,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import KFold
 import argparse
 
+
 parser = argparse.ArgumentParser(
                     prog='data_intake',
                     description='Intakes data',
@@ -36,3 +37,8 @@ for train_index , test_index in kf.split(X):
     acc_score.append((acc, r2))
     print(list(zip(model.coef_, model.feature_names_in_)))
 print(acc_score)
+
+
+
+print(file_name)
+
