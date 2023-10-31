@@ -52,6 +52,9 @@ import yaml
 
 ENV_ID = os.environ.get("SYSTEM_TESTS_ENV_ID")
 DAG_ID = "docker_sample_copy_data"
+user = "alarson"
+
+
 
 with models.DAG(
     DAG_ID,
@@ -112,7 +115,7 @@ with models.DAG(
         image="captech-airflow-sandbox-python:0.0.1",
         mount_tmp_dir=False,
         mounts=[
-            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+            Mount(source=f"/home/{user}/airflow-sandbox", target="/opt/airflow/", type="bind")
         ],
         environment={
                     "task_id": "{{ ti.task_id }}"
@@ -127,7 +130,7 @@ with models.DAG(
         image="captech-airflow-sandbox-python:0.0.1",
         mount_tmp_dir=False,
         mounts=[
-            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+            Mount(source=f"/home/{user}/airflow-sandbox", target="/opt/airflow/", type="bind")
         ],
         environment={
                     "task_id": "{{ ti.task_id }}"
@@ -142,14 +145,26 @@ with models.DAG(
         image="captech-airflow-sandbox-python:0.0.1",
         mount_tmp_dir=False,
         mounts=[
-            Mount(source="/home/jwang/airflow-sandbox", target="/opt/airflow/", type="bind")
+            Mount(source=f"/home/{user}/airflow-sandbox", target="/opt/airflow/", type="bind")
         ],
         environment={
                     "task_id": "{{ ti.task_id }}"
         },
         command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
-        dag=dag
+        dag=dag,
+        xcom_all=True
     )
+    
+    write_it = LocalToSnowflake(
+        task_id="write_stuff",
+        destination_schema="F1",
+        destination_table="F1_Predictions",
+        conn_id="CAPTECH_SNOWFLAKE",
+        folder_name="training",
+        # file_name="{{data_interval_end}}",
+        file_name="{{ti.xcom_pull(task_ids='training', key='file_name')}}"
+    )
+
     upload_training = LocalToSnowflakeOperator(
         task_id='upload_to_snowflake',
         conn_id='CAPTECH_SNOWFLAKE',
@@ -216,6 +231,5 @@ with models.DAG(
 
     # TEST BODY
     captech_sql_conn >> feature_engineering
-    feature_engineering >> lasso_training
     feature_engineering >> training
     training >> upload_training

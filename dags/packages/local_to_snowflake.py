@@ -7,7 +7,6 @@ import os
 import csv
 
 
-
 class LocalToSnowflakeOperator(BaseOperator):
 
     template_fields = ("file_name", "folder_name")
@@ -38,7 +37,7 @@ class LocalToSnowflakeOperator(BaseOperator):
 
 
     def execute(self, context):
-        
+       
         hook = SnowflakeHook(snowflake_conn_id=self.conn_id)
 
         connection=hook.get_conn()
@@ -65,4 +64,3 @@ class LocalToSnowflakeOperator(BaseOperator):
                 database=self.database.upper(),  
                 schema=self.schema.upper() 
         )
-
