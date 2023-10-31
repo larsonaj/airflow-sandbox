@@ -1,7 +1,5 @@
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
-from airflow.providers.common.sql.hooks.sql import fetch_all_handler
-import pandas as pd
 import os
 import csv
 

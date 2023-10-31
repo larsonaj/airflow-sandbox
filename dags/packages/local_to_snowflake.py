@@ -1,10 +1,7 @@
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
-from airflow.providers.common.sql.hooks.sql import fetch_all_handler
 import pandas as pd
 from snowflake.connector.pandas_tools import write_pandas
-import os
-import csv
 
 
 class LocalToSnowflakeOperator(BaseOperator):
@@ -47,6 +44,7 @@ class LocalToSnowflakeOperator(BaseOperator):
         upload_df = pd.read_csv(file_path)
 
         cursor = connection.cursor()
+        # MOVE THIS SQL INTO A FILE THAT IS READ
         create_table_sql = """
         CREATE TABLE IF NOT EXISTS f1.model_accuracy_scores (
             fold_num NUMBER,
