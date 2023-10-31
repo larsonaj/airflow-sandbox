@@ -38,7 +38,7 @@ from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.hooks.base import BaseHook
 from packages.snowflake_to_local import SnowflakeToLocalOperator
-from packages.local_to_snowflake import LocalToSnowflake
+from packages.local_to_snowflake import LocalToSnowflakeOperator
 
 import yaml
 
@@ -165,6 +165,19 @@ with models.DAG(
         file_name="{{ti.xcom_pull(task_ids='training', key='file_name')}}"
     )
 
+    upload_training = LocalToSnowflakeOperator(
+        task_id='upload_to_snowflake',
+        conn_id='CAPTECH_SNOWFLAKE',
+        input_path="/opt/airflow/data_files",
+        folder_name="training",
+        file_name="{{ data_interval_end }}",
+        table_name="model_accuracy_scores",
+        database="test_db",
+        schema="f1"
+    )
+    # ## generate SQL hook
+    # sql_connection_hook = get_connection(conn_id = FROM_CONFIG)
+
     # extract = SQLExecuteQueryOperator(
     #     sql = sql_query
     # )
@@ -218,6 +231,5 @@ with models.DAG(
 
     # TEST BODY
     captech_sql_conn >> feature_engineering
-    feature_engineering >> lasso_training
     feature_engineering >> training
-    [lasso_training, training] >> write_it
+    training >> upload_training

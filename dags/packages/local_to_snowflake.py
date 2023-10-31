@@ -1,62 +1,66 @@
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
-from snowflake.connector.pandas_tools import write_pandas
+from airflow.providers.common.sql.hooks.sql import fetch_all_handler
 import pandas as pd
+from snowflake.connector.pandas_tools import write_pandas
 import os
 import csv
-from datetime import datetime as dt
 
 
-
-class LocalToSnowflake(BaseOperator):
+class LocalToSnowflakeOperator(BaseOperator):
 
     template_fields = ("file_name", "folder_name")
     
     def __init__(
         self,
-        destination_schema,
-        destination_table,
+        table_name,
         conn_id,
+        database,
+        schema,
+        input_path,
         folder_name,
         file_name,
-        mode="insert",
+        mode="overwrite",
         format="csv",
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
         self.mode = mode
-        self.destination_schema=destination_schema
-        self.destination_table=destination_table
         self.format = format
+        self.table_name = table_name
         self.folder_name = folder_name
         self.file_name = file_name
         self.conn_id = conn_id
-
+        self.database = database
+        self.schema = schema
+        self.input_path = input_path
 
 
     def execute(self, context):
-        # read file into memory
-
-        if format == "parquet":
-            df = pd.read_parquet()
-
-        if format == "csv":
-            df = pd.read_csv(f'/{self.output_path}/{self.folder_name}/{self.file_name}.csv')
-            ## add insert timestamp
-            df["insert_timestamp"] = dt.now()
-
-        # build snowflake hook
+       
         hook = SnowflakeHook(snowflake_conn_id=self.conn_id)
 
         connection=hook.get_conn()
 
+        # open data csv as pandas df
+        file_path = f"{self.input_path}/{self.folder_name}/{self.file_name}.csv"
+        upload_df = pd.read_csv(file_path)
 
-        # generate insert statement
+        cursor = connection.cursor()
+        create_table_sql = """
+        CREATE TABLE IF NOT EXISTS f1.model_accuracy_scores (
+            fold_num NUMBER,
+            r_squared FLOAT,
+            accuracy_score FLOAT
+            );
+        """
+        cursor.execute(create_table_sql)
 
-        if mode == "insert":
-            success, nchunks, nrows, _ = write_pandas(conn=connection, df=df, table_name=destination_table, schema=destination_schema, database="TEST_DB", quote_identifiers=False)
-            print(f"Status: {success}, Chunks: {nchunks}, Rows: {nrows}, Other Stuff: {_}")
-        elif mode == "upsert":
-            kwargs['primary_key']
-
-        
+        # write df to snowflake
+        write_pandas(  
+                conn=connection,  
+                df=upload_df,  
+                table_name=self.table_name.upper(),  
+                database=self.database.upper(),  
+                schema=self.schema.upper() 
+        )
