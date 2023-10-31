@@ -36,7 +36,8 @@ class SnowflakeToLocalOperator(BaseOperator):
 
         connection=hook.get_conn()
 
-        stmt = self.sql_query
+        with open(self.sql_query, "r") as f:
+            stmt = f.read()
 
         cur = connection.cursor()
 

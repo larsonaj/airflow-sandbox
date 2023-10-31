@@ -6,6 +6,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import KFold
 import argparse
 import os
+from datetime import datetime
 
 parser = argparse.ArgumentParser(
                     prog='data_intake',
@@ -37,10 +38,15 @@ for i, (train_index , test_index) in enumerate(kf.split(X)):
     r2 = r2_score(y_test, pred_values)
     results_df = list(zip(y_test, pred_values))
     print(results_df)
-    acc_score.append((i, acc, r2))
+    acc_score.append((i, r2, acc_score))
     # print(list(zip(reg.coef_, reg.feature_names_in_)))
 
 df = pd.DataFrame(acc_score, columns=['FOLD_NUM', 'R_SQUARED', 'ACCURACY_SCORE'])
+
+now = datetime.now()
+dt_string = now.strftime("%m%d%Y%H%M%S")
+
+df['TS'] = dt_string
 
 task_id = os.environ['task_id']
 output_path = f"/opt/airflow/data_files/{task_id}"
