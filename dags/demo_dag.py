@@ -137,11 +137,10 @@ with models.DAG(
         xcom_all=True
     )
 
-# NEED TO STANDARDIZE FILE EXTENSION Y/N
-# CSV ALL DAY EVERYDAY
     upload_training = LocalToSnowflakeOperator(
         task_id='upload_to_snowflake',
         conn_id='CAPTECH_SNOWFLAKE',
+        ddl_path=f"/opt/airflow/dags/ddl/f1_model_scores.sql",
         input_path="/opt/airflow/data_files",
         folder_name="training",
         file_name="{{ data_interval_end }}",

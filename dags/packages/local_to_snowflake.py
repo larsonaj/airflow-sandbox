@@ -15,6 +15,7 @@ class LocalToSnowflakeOperator(BaseOperator):
         database,
         schema,
         input_path,
+        ddl_path,
         folder_name,
         file_name,
         mode="overwrite",
@@ -31,6 +32,7 @@ class LocalToSnowflakeOperator(BaseOperator):
         self.database = database
         self.schema = schema
         self.input_path = input_path
+        self.ddl_path = ddl_path
 
 
     def execute(self, context):
@@ -44,14 +46,10 @@ class LocalToSnowflakeOperator(BaseOperator):
         upload_df = pd.read_csv(file_path)
 
         cursor = connection.cursor()
-        # MOVE THIS SQL INTO A FILE THAT IS READ
-        create_table_sql = """
-        CREATE TABLE IF NOT EXISTS f1.model_accuracy_scores (
-            fold_num NUMBER,
-            r_squared FLOAT,
-            accuracy_score FLOAT
-            );
-        """
+        # read ddl sql
+        ddl_file = open(self.ddl_path, 'r')
+        create_table_sql = ddl_file.read()
+        # create table
         cursor.execute(create_table_sql)
 
         # write df to snowflake
