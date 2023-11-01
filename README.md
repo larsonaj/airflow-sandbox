@@ -4,7 +4,7 @@
 
 ## Cloning the repository 
 
-Before getting started, create a folder on your desktop called where this repo will live. If you already have a place where you like to store git repos or personal projects, feel free to clone the repo there. 
+Before getting started, create a new folder on your desktop. If you already have a place where you like to store git repos or personal projects, feel free to clone the repo there. 
 
 After installing git, open a terminal session and execute this command. 
 
