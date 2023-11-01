@@ -9,7 +9,7 @@ Before getting started, create a new folder on your desktop. If you already have
 After installing git, open a terminal session and execute this command. 
 
 ```zsh
-git clone https://github.com/larsonaj/airflow-sandbox.git {FOLDER-NAME}
+git clone https://github.com/larsonaj/airflow-sandbox.git
 ```
 
 ## Getting the airflow containers started on your machine
