@@ -45,7 +45,6 @@ SNOWFLAKE_CONNECTION='{
 
 Once you have Docker installed and the env file created, in your terminal enter the following command:
 
-
 ```zsh
 # To start docker on your first run? (can't remember if i had to do this to start)
 docker compose up airflow-init
@@ -54,13 +53,12 @@ docker compose up airflow-init
 docker compose up
 ```
 
-
 This command starts the containers defined in this repo. It is able to pick up the container from its previous state and recreate it by using the docker-compose.yml file. Now that the cluster has started, you should now be able to access the Airflow UI at http://localhost:8080.
-
 
 Reference: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html
 
-## Writing your first DAG
+
+## Understanding the initial DAG
 
 At this point in the documentation, the Airflow containers should be spun up and you should have access to the Airflow UI. Next we can write our first DAG. 
 
@@ -103,7 +101,7 @@ feature_engineering = DockerOperator(
     dag=dag
 )
 ```
-- This task runs `command` in our container to pass the previous file to our `feature_engineering.py` script.
+- This task runs `command` in our container to pass the previous file to our `feature_engineering.py` script before some processing takes place there.
 
 
 Next we have `training`:
@@ -127,8 +125,6 @@ training = DockerOperator(
 ```
 - This task runs `command` in our container to pass the previous file to our `training.py` script.
 
-
-
 Finally we have `write_it` which writes stuff:
 
 ```python
@@ -144,11 +140,23 @@ write_it = LocalToSnowflake(
 - This task writes `file_name` to the `destination_schema.destination_table`. It adds an `insert_timestamp`field to record the time of writing. 
 - Reference: `local_to_snowflake.py`
 
+In the end, the DAG is outlined as follows:
 
-All of these tasks can be reconfigured with your own data, while building this sandbox the team utilized Formula 1 racing data to predict qualifying times based on various other factors. If you're interested in working with your own data, after storing it in Snowflake and refactoring `sql_query`, editing the `training.py` and `feature_engineering.py` scripts should be a good start.
+```python
+captech_sql_conn >> feature_engineering # first_task >> second_task
+feature_engineering >> training # second_task >> third_task
+training >> write_it # third_task >> second_task
+```
+
+Each task in the DAG builds on the previous, the `>>` python operator helps declare individual task dependencies. 
+
+All of these tasks can be reconfigured with your own data, while building this sandbox the team utilized Formula 1 racing data to predict qualifying times based on various other factors. If you're interested in working with your own data, after storing it in Snowflake and refactoring `sql_query`, editing the `training.py` and `feature_engineering.py` scripts is a good place to start.
 
 Reference: https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html
 
-*need to add screenshots*
+**need to add screenshots**
+
 
 ## Configuration and experimentation
+
+**add experimentation, thinking ill walk through what it would look like to edit the demo dag/files to work with diff data OR outline what setting up the F1 stuff looked like** 
