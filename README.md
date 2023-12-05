@@ -15,7 +15,6 @@ git clone https://github.com/larsonaj/airflow-sandbox.git
 Now you should be able to open the repository in your IDE.
 
 
-
 ## Getting the Airflow containers started on your machine
 *Note: this section assumes you have docker installed*
 *ADD NOTE FOR MACOS USERS?*
@@ -26,22 +25,22 @@ First we need to add the *.env* file to the top level directory which contains a
 
 Sample *.env* file:
 
-```yaml
+```json
 AIRFLOW_UID=50000  
 SNOWFLAKE_CONNECTION='{
-	"conn_type": "snowflake",
-	"login": "username",
-	"password": "password",
-	"host": "captech_partner.snowflakecomputing.com",
-	"port": 443,
-	"schema": "F1",
-	"extra": {
-		"account": "captech_partner",
-		"database": "TEST_DB",
-		"region": "us-east-1",
-		"warehouse": "XS_WH"
-		}
-	}'
+    "conn_type": "snowflake",
+    "login": "username",
+    "password": "password",
+    "host": "captech_partner.snowflakecomputing.com",
+    "port": 443,
+    "schema": "F1",
+    "extra": {
+        "account": "captech_partner",
+        "database": "TEST_DB",
+        "region": "us-east-1",
+        "warehouse": "XS_WH"
+	}
+}'
 ```
 
 Once you have Docker installed and the env file created, in your terminal enter the following command:
