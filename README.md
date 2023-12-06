@@ -2,7 +2,6 @@
 
 # airflow-sandbox
 
-<<<<<<< HEAD
 ## Cloning the repository 
 
 Before getting started, create a new folder on your desktop. If you already have a place where you like to store git repos or personal projects, feel free to clone the repo there. 
@@ -57,10 +56,6 @@ docker compose up
 This command starts the containers defined in this repo. It is able to pick up the container from its previous state and recreate it by using the docker-compose.yml file. Now that the cluster has started, you should now be able to access the Airflow UI at http://localhost:8080.
 
 Reference: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html
-=======
-## Getting the airflow containers started on your machine
->>>>>>> f6bbf104505a1450b4f41bc2eb14d37db2388cc4
-
 
 ## Understanding the initial DAG
 
@@ -77,14 +72,14 @@ captech_sql_conn = SnowflakeToLocalOperator(
     task_id='query_snowflake',
     conn_id='CAPTECH_SNOWFLAKE',
     output_path="/opt/airflow/data_files",
-    sql_query=sql_query,
+    sql_query="/opt/airflow/dags/sql/qualifying_times.sql",
     folder_name="{{ ti.task_id }}",
     file_name="{{ data_interval_end }}"
 )
 ```
 - This task performs `sql_query` against the Snowflake connection established in `snowflake_to_local.py`, using snowflake hooks, before dumping the results to `output_path/folder_name/file_name` which in our case is within this repo under `data_files`.
-- The `sql_query` parameter references a predefined SQL query to perform against the Snowflake connection.
-- Reference: `snowflake_to_local.py`
+- The `sql_query` parameter references a predefined SQL stored under /opt/airflow/dags/sql.
+- Reference: `snowflake_to_local.py`, `sql/qualifying_times.sql`
 
 
 Next we have `feature_engineering`:
@@ -101,7 +96,7 @@ feature_engineering = DockerOperator(
     environment={
                 "task_id": "{{ ti.task_id }}"
     },
-    command="python3 opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+    command="python3 /opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
     dag=dag
 )
 ```
@@ -122,7 +117,7 @@ training = DockerOperator(
     environment={
                 "task_id": "{{ ti.task_id }}"
     },
-    command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+    command="python3 /opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
     dag=dag,
     xcom_all=True
 )
@@ -132,13 +127,16 @@ training = DockerOperator(
 Finally we have `write_it` which writes stuff:
 
 ```python
-write_it = LocalToSnowflake(
-    task_id="write_stuff",
-    destination_schema="F1",
-    destination_table="F1_Predictions",
-    conn_id="CAPTECH_SNOWFLAKE",
+upload_training = LocalToSnowflakeOperator(
+    task_id='upload_to_snowflake',
+    conn_id='CAPTECH_SNOWFLAKE',
+    ddl_path=f"/opt/airflow/dags/ddl/f1_model_scores.sql",
+    input_path="/opt/airflow/data_files",
     folder_name="training",
-    file_name="{{ti.xcom_pull(task_ids='training', key='file_name')}}"
+    file_name="{{ data_interval_end }}",
+    table_name="model_accuracy_scores",
+    database="test_db",
+    schema="f1"
 )
 ```
 - This task writes `file_name` to the `destination_schema.destination_table`. It adds an `insert_timestamp`field to record the time of writing. 
@@ -163,4 +161,5 @@ Reference: https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/d
 
 ## Configuration and experimentation
 
-**add experimentation, thinking ill walk through what it would look like to edit the demo dag/files to work with diff data OR outline what setting up the F1 stuff looked like** 
+**add experimentation, thinking ill walk through what it would look like to edit the demo dag/files to work with jaffle shop OR outline what setting up the F1 stuff looked like** 
+
