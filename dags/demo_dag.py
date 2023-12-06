@@ -31,14 +31,9 @@ from datetime import datetime
 from docker.types import Mount
 
 from airflow import models
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.docker.operators.docker import DockerOperator
-from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
-from airflow.hooks.base import BaseHook
 from packages.snowflake_to_local import SnowflakeToLocalOperator
-from packages.local_to_snowflake import LocalToSnowflake
+from packages.local_to_snowflake import LocalToSnowflakeOperator
 
 import yaml
 
@@ -52,7 +47,9 @@ import yaml
 
 ENV_ID = os.environ.get("SYSTEM_TESTS_ENV_ID")
 DAG_ID = "docker_sample_copy_data"
+# GET USER FROM SOMEWHERE ELSE
 user = "alarson"
+# OPERATOR MOUNT PATHING NEEDS WORK
 
 
 
@@ -64,39 +61,6 @@ with models.DAG(
     tags=["demo", "sandbox", "Captech"],
 ) as dag:
 
-
-    sql_query = """
-    select q."q1",
-        q."q2",
-        q."q3",
-        dr."driverId",
-        r."year" - year(dr."dob") as age,
-        cr."constructorId",
-        cr."nationality",
-        r."year",
-        c."circuitId",
-        lt.minLapTime
-    from F1.QUALIFYING as q
-    left join F1.DRIVERS as dr
-        on (q."driverId" = dr."driverId")
-    left join F1.CONSTRUCTORS as cr
-        on (q."constructorId" = cr."constructorId")
-    left join F1.RACES r
-        on (q."raceId" = r."raceId")
-    left join F1.CIRCUITS c
-        on (r."circuitId"= c."circuitId")
-    left join (
-    select "driverId",
-            "raceId",
-            min("milliseconds")/1000 as minLapTime
-        from F1.LAP_TIMES
-        group by "driverId",
-            "raceId"
-    ) lt
-    on (q."driverId" = lt."driverId"
-        and q."raceId" = lt."raceId")
-    """
-
     with open('/opt/airflow/dags/config.yaml') as f:
         config = yaml.safe_load(f)
 
@@ -104,7 +68,7 @@ with models.DAG(
         task_id='query_snowflake',
         conn_id='CAPTECH_SNOWFLAKE',
         output_path="/opt/airflow/data_files",
-        sql_query=sql_query,
+        sql_query="/opt/airflow/dags/sql/qualifying_times.sql",
         folder_name="{{ ti.task_id }}",
         file_name="{{ data_interval_end }}"
     )
@@ -120,22 +84,7 @@ with models.DAG(
         environment={
                     "task_id": "{{ ti.task_id }}"
         },
-        command="python3 opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
-        dag=dag
-    )
-
-    lasso_training = DockerOperator(
-        task_id="lasso_training",
-        api_version="auto",
-        image="captech-airflow-sandbox-python:0.0.1",
-        mount_tmp_dir=False,
-        mounts=[
-            Mount(source=f"/home/{user}/airflow-sandbox", target="/opt/airflow/", type="bind")
-        ],
-        environment={
-                    "task_id": "{{ ti.task_id }}"
-        },
-        command="python3 opt/airflow/dags/scripts/lasso_training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        command="python3 /opt/airflow/dags/scripts/feature_engineering.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag
     )
 
@@ -150,74 +99,23 @@ with models.DAG(
         environment={
                     "task_id": "{{ ti.task_id }}"
         },
-        command="python3 opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
+        command="python3 /opt/airflow/dags/scripts/training.py --upstream_task {{ ti.task.upstream_task_ids.pop() }} --filename {{data_interval_end}}.csv",
         dag=dag,
         xcom_all=True
     )
-    
-    write_it = LocalToSnowflake(
-        task_id="write_stuff",
-        destination_schema="F1",
-        destination_table="F1_Predictions",
-        conn_id="CAPTECH_SNOWFLAKE",
+
+    upload_training = LocalToSnowflakeOperator(
+        task_id='upload_to_snowflake',
+        conn_id='CAPTECH_SNOWFLAKE',
+        ddl_path=f"/opt/airflow/dags/ddl/f1_model_scores.sql",
+        input_path="/opt/airflow/data_files",
         folder_name="training",
-        # file_name="{{data_interval_end}}",
-        file_name="{{ti.xcom_pull(task_ids='training', key='file_name')}}"
+        file_name="{{ data_interval_end }}",
+        table_name="model_accuracy_scores",
+        database="test_db",
+        schema="f1"
     )
-
-    # extract = SQLExecuteQueryOperator(
-    #     sql = sql_query
-    # )
-
-    # t_view = BashOperator(
-    #     task_id="view_file",
-    #     bash_command=locate_file_cmd,
-    #     do_xcom_push=True,
-    #     params={"source_location": "/your/input_dir/path"},
-    #     dag=dag,
-    # )
-
-    # t_is_data_available = ShortCircuitOperator(
-    #     task_id="check_if_data_available",
-    #     python_callable=lambda task_output: not task_output == "",
-    #     op_kwargs=dict(task_output=t_view.output),
-    #     dag=dag,
-    # )
-
-    # t_move = DockerOperator(
-    #     api_version="auto",
-    #     docker_url="unix://var/run/docker.sock",  # replace it with swarm/docker endpoint
-    #     image="captech/python-processing-container:latest",
-    #     network_mode="bridge",
-    #     mounts=[
-    #         Mount(source="/your/host/input_dir/path", target="/your/input_dir/path", type="bind"),
-    #         Mount(source="/your/host/output_dir/path", target="/your/output_dir/path", type="bind"),
-    #     ],
-    #     command=[
-    #         "/bin/bash",
-    #         "-c",
-    #         "/bin/sleep 30; "
-    #         "/bin/mv {{ params.source_location }}/" + str(t_view.output) + " {{ params.target_location }};"
-    #         "/bin/echo '{{ params.target_location }}/" + f"{t_view.output}';",
-    #     ],
-    #     task_id="move_data",
-    #     do_xcom_push=True,
-    #     params={"source_location": "/your/input_dir/path", "target_location": "/your/output_dir/path"},
-    #     dag=dag,
-    # )
-
-    # t_print = DockerOperator(
-    #     api_version="auto",
-    #     docker_url="unix://var/run/docker.sock",
-    #     image="captech/python-processing-container:latest",
-    #     mounts=[Mount(source="/your/host/output_dir/path", target="/your/output_dir/path", type="bind")],
-    #     command=f"cat {t_move.output}",
-    #     task_id="print",
-    #     dag=dag,
-    # )
-
-    # TEST BODY
+   
     captech_sql_conn >> feature_engineering
-    feature_engineering >> lasso_training
     feature_engineering >> training
-    [lasso_training, training] >> write_it
+    training >> upload_training

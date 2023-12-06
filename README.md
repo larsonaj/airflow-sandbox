@@ -2,6 +2,7 @@
 
 # airflow-sandbox
 
+<<<<<<< HEAD
 ## Cloning the repository 
 
 Before getting started, create a new folder on your desktop. If you already have a place where you like to store git repos or personal projects, feel free to clone the repo there. 
@@ -56,6 +57,9 @@ docker compose up
 This command starts the containers defined in this repo. It is able to pick up the container from its previous state and recreate it by using the docker-compose.yml file. Now that the cluster has started, you should now be able to access the Airflow UI at http://localhost:8080.
 
 Reference: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html
+=======
+## Getting the airflow containers started on your machine
+>>>>>>> f6bbf104505a1450b4f41bc2eb14d37db2388cc4
 
 
 ## Understanding the initial DAG

@@ -1,7 +1,5 @@
 from airflow.models.baseoperator import BaseOperator
 from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
-from airflow.providers.common.sql.hooks.sql import fetch_all_handler
-import pandas as pd
 import os
 import csv
 
@@ -38,7 +36,8 @@ class SnowflakeToLocalOperator(BaseOperator):
 
         connection=hook.get_conn()
 
-        stmt = self.sql_query
+        with open(self.sql_query, "r") as f:
+            stmt = f.read()
 
         cur = connection.cursor()
 
