@@ -46,10 +46,10 @@ SNOWFLAKE_CONNECTION='{
 Once you have Docker installed and the env file created, in your terminal enter the following command:
 
 ```zsh
-# To start docker on your first run? (can't remember if i had to do this to start)
+# To start docker on your first run (can't remember if i had to do this to start)
 docker compose up airflow-init
 
-# To start docker after intial run?
+# To start docker after intial run
 docker compose up
 ```
 
@@ -78,7 +78,7 @@ captech_sql_conn = SnowflakeToLocalOperator(
 )
 ```
 - This task performs `sql_query` against the Snowflake connection established in `snowflake_to_local.py`, using snowflake hooks, before dumping the results to `output_path/folder_name/file_name` which in our case is within this repo under `data_files`.
-- The `sql_query` parameter references a predefined SQL stored under /opt/airflow/dags/sql.
+- The `sql_query` parameter references a predefined SQL script stored under /opt/airflow/dags/sql.
 - Reference: `snowflake_to_local.py`, `sql/qualifying_times.sql`
 
 
@@ -122,9 +122,9 @@ training = DockerOperator(
     xcom_all=True
 )
 ```
-- This task runs `command` in our container to pass the previous file to our `training.py` script.
+- This task runs `command` in our container to pass the previous file to our `training.py` script for model training.
 
-Finally we have `write_it` which writes stuff:
+Finally we have `upload_training`:
 
 ```python
 upload_training = LocalToSnowflakeOperator(
@@ -139,7 +139,7 @@ upload_training = LocalToSnowflakeOperator(
     schema="f1"
 )
 ```
-- This task writes `file_name` to the `destination_schema.destination_table`. It adds an `insert_timestamp`field to record the time of writing. 
+- This task creates the destination table for the training results stored under `file_name`. It then writes the results to the destination table at `database`.`schema`.`table_name`.
 - Reference: `local_to_snowflake.py`
 
 In the end, the DAG is outlined as follows:
@@ -147,7 +147,7 @@ In the end, the DAG is outlined as follows:
 ```python
 captech_sql_conn >> feature_engineering # first_task >> second_task
 feature_engineering >> training # second_task >> third_task
-training >> write_it # third_task >> second_task
+training >> uplaod_training # third_task >> second_task
 ```
 
 Each task in the DAG builds on the previous, the `>>` python operator helps declare individual task dependencies. 
