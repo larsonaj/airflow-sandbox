@@ -29,15 +29,15 @@ Sample *.env* file:
 AIRFLOW_UID=50000  
 SNOWFLAKE_CONNECTION='{
     "conn_type": "snowflake",
-    "login": "username",
-    "password": "password",
-    "host": "captech_partner.snowflakecomputing.com",
-    "port": 443,
-    "schema": "F1",
+    "login": "xxxx",
+    "password": "xxx",
+    "host": "xx.xx.com",
+    "port":000,
+    "schema": "xx",
     "extra": {
-        "account": "captech_partner",
-        "database": "TEST_DB",
-        "region": "us-east-1",
+        "account": "xxxx",
+        "database": "xxx",
+        "region": "us-east-2",
         "warehouse": "XS_WH"
 	}
 }'
